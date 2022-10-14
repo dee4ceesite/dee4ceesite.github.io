@@ -94,7 +94,7 @@ let renderPage = (loggedIn)=>{
 }); 
 
 rtdb.onChildChanged(tweetRef, (ss)=>{
-  let tObj = ss.val();
+  let tObj = ss.val(); 
   let ID = ss.key;
   let newText = "Likes: " + tObj.likes + " Retweets: " + tObj.retweets;
   $("#likeRTtext-"+[ID]).text(newText);
