@@ -1,0 +1,16 @@
+.clicked {
+  color: salmon;
+}
+
+.hidden {
+  display: none;
+}
+
+body{
+  background-color: lightblue;
+}
+
+.tweet{
+  background-color: red;
+}
+
