@@ -112,28 +112,50 @@ rtdb.onChildChanged(tweetRef, (ss)=>{
 }
 
 let renderTweet = (tObj, uuid)=>{
+  let userID = tObj.authorID;
+  var handle = "Default User";
+  var image = "https://thumbs.dreamstime.com/b/default-avatar-profile-trendy-style-social-media-user-icon-187599373.jpg";
+  var userRef = firebase.database().ref().child("/users").child(userID);
+  //console.log("did this wait");
   $("#alltweets").prepend(`
-<div class="card border-dark mb-3 tweet" data-uuid="${uuid}" data-user-uid="${tObj.author.id}" style="max-width: 540px;">
-  <div class="row g-0">
-    <div class="col-md-4">
-      <img src="${tObj.author.pic}" class="img-fluid rounded-start" referrerpolicy="no-referrer" alt="..."></img>
-    </div>
-    <div class="col-md-8">
-      <div class="card-body">
-        <h5 class="card-title">${tObj.author.handle}</h5>
-          <p class="card-text">${tObj.content}</p>
-          <p class="card-text"><small class="text-muted">Tweeted at ${new Date(tObj.timestamp).toLocaleString()}</small></p>
-          <p class="card-text" id="likeRTtext-${uuid}">Likes: ${tObj.likes} Retweets: ${tObj.retweets}</p>
-        <div id="buttons">
-          <button id="likebutton" href="#" class="btn btn-danger likebutton" data-uuid="${uuid}" data-user-uid="${tObj.author.id}">Like</button>
-          <button id="retweetbutton" href="#" class="btn btn-success retweetbutton" data-uuid="${uuid}" data-user-uid="${tObj.author.id}">Retweet</button>
-          <button id="deletebutton" href="#" class="btn btn-dark deletebutton" data-uuid="${uuid}" data-user-uid="${tObj.author.id}">Delete Tweet</button>
+  <div class="card border-dark mb-3 tweet" data-uuid="${uuid}" data-user-uid="${userID}" style="max-width: 540px;">
+    <div class="row g-0">
+      <div id="userImg-${uuid}" class="col-md-4">
+        <img src="${image}" class="img-fluid rounded-start" referrerpolicy="no-referrer" alt="..."></img>
+      </div>
+      <div class="col-md-8">
+        <div class="card-body">
+          <h5 class="card-title" id="userHandle-${uuid}">${handle}</h5>
+            <p class="card-text">${tObj.content}</p>
+            <p class="card-text"><small class="text-muted">Tweeted at ${new Date(tObj.timestamp).toLocaleString()}</small></p>
+            <p class="card-text" id="likeRTtext-${uuid}">Likes: ${tObj.likes} Retweets: ${tObj.retweets}</p>
+          <div id="buttons">
+            <button id="likebutton" href="#" class="btn btn-danger likebutton" data-uuid="${uuid}" data-user-uid="${userID}">Like</button>
+            <button id="retweetbutton" href="#" class="btn btn-success retweetbutton" data-uuid="${uuid}" data-user-uid="${userID}">Retweet</button>
+            <button id="deletebutton" href="#" class="btn btn-dark deletebutton" data-uuid="${uuid}" data-user-uid="${userID}">Delete Tweet</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
   `);
+  userRef.get().then((ss) => {
+    let userData = ss.val();
+    console.log(userData);
+    if(!userData){
+      console.log("null");
+    } 
+    else{
+      console.log("found");
+      handle = userData.handle;
+      $("#userHandle-"+uuid).text(handle);
+      image = userData.pic;
+      console.log(image)
+      $("#userImg-"+uuid).html(`<img src="${image}" id="userImg" class="img-fluid rounded-start" referrerpolicy="no-referrer" alt="..."></img>`);
+
+    }
+  });
+  
 }
 
 let toggleLike = (tweetRef, uid)=> {
@@ -188,10 +210,8 @@ $("#tweetbutt").on("click", evt=>{
                  "likes": likes, 
                  "retweets": retweets, 
                  "timestamp": new Date().getTime(), 
-                 "author": {
-                  "handle": username, 
-                  "pic": image,
-                  "id": user.uid }};
+                 "authorID": user.uid 
+                };
   //console.log(tweetID);
   updateUser(user, tweetID);
   myRef.set(myObj);
