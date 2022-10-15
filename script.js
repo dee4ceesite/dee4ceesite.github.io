@@ -31,6 +31,7 @@ let tweetJSON = {
     "pic": "https://ih1.redbubble.net/image.1036063426.6926/st,small,507x507-pad,600x600,f8f8f8.jpg"
   }
 };
+
 firebase.initializeApp(firebaseConfig);
 firebase.auth().onAuthStateChanged(user => {
   //alert("hey whats up man how yah doin");
@@ -43,9 +44,12 @@ firebase.auth().onAuthStateChanged(user => {
   } 
 });
 
+
+
 let renderLogin = ()=>{
   $("#login").show();
   $("#mainpage").hide();
+  
   $("#login").on("click", ()=>{
     var provider = new firebase.auth.GoogleAuthProvider();
     firebase.auth().signInWithRedirect(provider);
@@ -85,10 +89,15 @@ let renderPage = (loggedIn)=>{
     $("#deletebutton").on("click", (evt)=>{
       //const user = firebase.auth().currentUser;
       let tweetID = $(evt.currentTarget).attr("data-uuid");
+      let authorID = $(evt.currentTarget).attr("data-user-uid");
+      console.log(evt.currentTarget);
       $("div[data-uuid=" + tweetID+ "]").remove();
       let tweetIDRef = rtdb.ref(db, "/tweets/"+tweetID);
       //alert(tweetIDRef);
       rtdb.remove(tweetIDRef); 
+      let authorIDRef = rtdb.ref(db, "/users/"+authorID+"/tweets/"+tweetID);
+      //alert(authorIDRef);
+      rtdb.remove(authorIDRef); 
 
     });
 }); 
@@ -104,7 +113,7 @@ rtdb.onChildChanged(tweetRef, (ss)=>{
 
 let renderTweet = (tObj, uuid)=>{
   $("#alltweets").prepend(`
-<div class="card border-dark mb-3 tweet" data-uuid="${uuid}" user-uid="${tObj.author.id}" style="max-width: 540px;">
+<div class="card border-dark mb-3 tweet" data-uuid="${uuid}" data-user-uid="${tObj.author.id}" style="max-width: 540px;">
   <div class="row g-0">
     <div class="col-md-4">
       <img src="${tObj.author.pic}" class="img-fluid rounded-start" referrerpolicy="no-referrer" alt="..."></img>
@@ -116,9 +125,9 @@ let renderTweet = (tObj, uuid)=>{
           <p class="card-text"><small class="text-muted">Tweeted at ${new Date(tObj.timestamp).toLocaleString()}</small></p>
           <p class="card-text" id="likeRTtext-${uuid}">Likes: ${tObj.likes} Retweets: ${tObj.retweets}</p>
         <div id="buttons">
-          <button id="likebutton" href="#" class="btn btn-danger likebutton" data-uuid="${uuid}">Like</button>
-          <button id="retweetbutton" href="#" class="btn btn-success retweetbutton" data-uuid="${uuid}">Retweet</button>
-          <button id="deletebutton" href="#" class="btn btn-dark deletebutton" data-uuid="${uuid}">Delete Tweet</button>
+          <button id="likebutton" href="#" class="btn btn-danger likebutton" data-uuid="${uuid}" data-user-uid="${tObj.author.id}">Like</button>
+          <button id="retweetbutton" href="#" class="btn btn-success retweetbutton" data-uuid="${uuid}" data-user-uid="${tObj.author.id}">Retweet</button>
+          <button id="deletebutton" href="#" class="btn btn-dark deletebutton" data-uuid="${uuid}" data-user-uid="${tObj.author.id}">Delete Tweet</button>
         </div>
       </div>
     </div>
@@ -171,8 +180,11 @@ $("#tweetbutt").on("click", evt=>{
   let image = user.photoURL;
   let tweet = $("#tweet").val();
   let likes = 0;
-  let retweets = 0; 
-  const myObj = {"content": tweet, 
+  let retweets = 0;
+  var myRef = firebase.database().ref().child("/tweets").push();
+  var tweetID = myRef.key; 
+  const myObj = {
+                 "content": tweet, 
                  "likes": likes, 
                  "retweets": retweets, 
                  "timestamp": new Date().getTime(), 
@@ -180,12 +192,54 @@ $("#tweetbutt").on("click", evt=>{
                   "handle": username, 
                   "pic": image,
                   "id": user.uid }};
-  rtdb.push(tweetRef, myObj);
-})
+  //console.log(tweetID);
+  updateUser(user, tweetID);
+  myRef.set(myObj);
+  //rtdb.push(tweetRef, myObj);
+});
+
+let updateUser = (user, tweetID)=>{
+  //alert("hey");
+  var userRef = firebase.database().ref().child("/users").child(user.uid);
+  userRef.get().then((ss) => {
+    let userData = ss.val();
+    //alert(userData);
+    if(!userData){
+      const newUser = {
+        handle: user.displayName,
+        pic: user.photoURL,
+        tweets:{
+          [tweetID] : true,
+        } 
+        };
+      userRef.set(newUser);
+    } 
+    else{
+      //console.log(userData);
+      const newUserTweet = {
+          [tweetID] : true,
+      } 
+      userRef.child("/tweets").update(newUserTweet);
+    }
+    //console.log(userData);
+  });
+  
+  
+}
 
 $("#nukeTweets").on("click", ()=>{
   rtdb.remove(tweetRef);
   $("#alltweets").empty();
+});
+
+$("#user-search").hide();
+$("#go-to-search").on("click", ()=>{
+  $("#mainpage").hide();
+  $("#user-search").show();
+});
+$("#ret-butt").on("click", ()=>{
+  $("#mainpage").show();
+  $("#user-search").hide();
 });
 
 $("#hideTweets").on('click', ()=>{
