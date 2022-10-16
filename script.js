@@ -40,10 +40,19 @@ firebase.auth().onAuthStateChanged(user => {
     renderLogin();
   }
   else{
-    renderPage(user);
+    $("#login").hide();
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has("user")){
+      renderPage(user)
+    }
   } 
 });
 
+let returnFunc = function(){
+  const myParams = new URLSearchParams(window.location.search);
+  myParams.delete('user');
+  window.location.search = myParams;
+}
 
 
 let renderLogin = ()=>{
@@ -55,9 +64,8 @@ let renderLogin = ()=>{
     firebase.auth().signInWithRedirect(provider);
   });
 }
-let renderPage = (loggedIn)=>{ 
 
-  $("#login").hide();
+let renderPage = (loggedIn)=>{ 
   $("#mainpage").show();
   $("#showTweets").hide();
   let user = loggedIn.displayName;
@@ -65,41 +73,20 @@ let renderPage = (loggedIn)=>{
   $("#logout").on("click", ()=>{
 	  firebase.auth().signOut();
   });
+  $("#search-butt-main").on("click", ()=>{
+    $("#mainpage").hide();
+    $("#user-search").show();
+    let youruser = $("#search-box").val();
+    if (!!youruser){
+      const myParams = new URLSearchParams(window.location.search);
+      myParams.set('user', youruser);
+      window.location.search = myParams;
+      renderSearch(youruser);
+    }
+  });
   rtdb.onChildAdded(tweetRef, (ss)=>{
     let tObj = ss.val();
-    renderTweet(tObj, ss.key);
-    //$("#likebutton").click(function(){alert("button clicked");});
-    $("#likebutton").off("click");
-    $("#likebutton").on("click", (evt)=>{
-      //alert($(evt.currentTarget).attr("data-uuid"));
-      let ID = $(evt.currentTarget).attr("data-uuid");
-      let tweetIDRef = firebase.database().ref("/tweets").child(ID);
-      toggleLike(tweetIDRef, loggedIn.uid);
-    });
-    
-    $("#retweetbutton").off("click");
-    $("#retweetbutton").on("click", (evt)=>{
-      //alert($(evt.currentTarget).attr("data-uuid"));
-      let ID = $(evt.currentTarget).attr("data-uuid");
-      let tweetIDRef = firebase.database().ref("/tweets").child(ID);
-      toggleRetweet(tweetIDRef, loggedIn.uid);
-    });
-
-    $("#deletebutton").off("click");
-    $("#deletebutton").on("click", (evt)=>{
-      //const user = firebase.auth().currentUser;
-      let tweetID = $(evt.currentTarget).attr("data-uuid");
-      let authorID = $(evt.currentTarget).attr("data-user-uid");
-      console.log(evt.currentTarget);
-      $("div[data-uuid=" + tweetID+ "]").remove();
-      let tweetIDRef = rtdb.ref(db, "/tweets/"+tweetID);
-      //alert(tweetIDRef);
-      rtdb.remove(tweetIDRef); 
-      let authorIDRef = rtdb.ref(db, "/users/"+authorID+"/tweets/"+tweetID);
-      //alert(authorIDRef);
-      rtdb.remove(authorIDRef); 
-
-    });
+    renderTweet(tObj, ss.key, "alltweets");
 }); 
 
 rtdb.onChildChanged(tweetRef, (ss)=>{
@@ -111,13 +98,117 @@ rtdb.onChildChanged(tweetRef, (ss)=>{
 
 }
 
-let renderTweet = (tObj, uuid)=>{
+let renderSearch = (user)=>{
+  
+  firebase.database().ref("users").on('value', function(snap){
+    var key = null;
+    snap.forEach(function(childNodes){
+      //console.log(childNodes.val().handle);
+      //console.log(user==childNodes.val().handle);
+      if(user==childNodes.val().handle){
+        key = childNodes.key;
+      }
+  });
+  if(!key){
+    $("#searched-info").html(`<p>Unable to find User: ${user} </p>`);
+  }
+  else{
+    //renderUserTweets(key);
+    //$("#searched-info").html(`<p>heyyyy, we did find them! User: ${key}</p>`);
+    
+    renderUserTweets(key);  
+  }
+  $("#mainpage").hide();
+  $("#user-search").show();
+   });
+ $("#ret-butt").click(returnFunc);
+ $("#search-butt-search").on("click", ()=>{
+  let youruser = $("#search-box-search").val();
+  if (!!youruser){
+    const myParams = new URLSearchParams(window.location.search);
+    myParams.set('user', youruser);
+    window.location.search = myParams;
+    renderSearch(youruser);
+  }
+});
+ rtdb.onChildChanged(tweetRef, (ss)=>{
+  //$("#alltweets").empty("");
+  let tObj = ss.val(); 
+  let ID = ss.key;
+  let newText = "Likes: " + tObj.likes + " Retweets: " + tObj.retweets;
+  $("#likeRTtext-"+[ID]).text(newText);
+});
+}
+
+let renderUserTweets = (userKey)=>{
+  let loggedIn = firebase.auth().currentUser;
+  //alert(userKey);
+  const dbRef = firebase.database().ref();
+  
+  dbRef.child("users").child(userKey).get().then((ss) => {
+    let userData = ss.val();
+    let hey = "im a variable";
+    console.log(userData);
+    $("#searched-info").html(`
+      <p>We found the user: ${userData.handle}</p>
+      <p>Here's their tweets:</p>
+      <div id="userTweets"></div>
+    `);
+    
+    if(!userData.tweets){
+      console.log("they got none");
+      $("#userTweets").append(`
+        <p>This user has no tweets!</p>
+      `);
+    }
+    else{
+      
+      for(var tweetID of Object.keys(userData.tweets)){
+        
+        dbRef.child("tweets").child(tweetID).get().then((ss) =>{
+          
+          var tObj = ss.val();
+          renderTweet(tObj, ss.key, "userTweets");
+        });
+      }
+    }
+    
+});
+}
+
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has("user")){
+  //renderGreeting(urlParams.get("user"));
+  console.log("User in URL: " + urlParams.get("user"));
+  var user = urlParams.get("user");
+  renderSearch(user);
+} else {
+  //renderLogin();
+  console.log("no user in url");
+}
+
+let renderTweet = (tObj, uuid, location)=>{
   let userID = tObj.authorID;
   var handle = "Default User";
   var image = "https://thumbs.dreamstime.com/b/default-avatar-profile-trendy-style-social-media-user-icon-187599373.jpg";
   var userRef = firebase.database().ref().child("/users").child(userID);
-  //console.log("did this wait");
-  $("#alltweets").prepend(`
+  console.log("Rendering Tweet"); 
+  userRef.get().then((ss) => {
+    //console.log("Updating Info");
+    let userData = ss.val();
+    //console.log(userData);
+    if(!userData){
+      //console.log("null");
+    } 
+    else{
+      //console.log("found");
+      handle = userData.handle;
+      $("#userHandle-"+uuid).text(handle);
+      image = userData.pic;
+      //console.log(image)
+      $("#userImg-"+uuid).html(`<img src="${image}" id="userImg" class="img-fluid rounded-start" referrerpolicy="no-referrer" alt="..."></img>`);
+    }
+    $("#"+location).prepend(`
   <div class="card border-dark mb-3 tweet" data-uuid="${uuid}" data-user-uid="${userID}" style="max-width: 540px;">
     <div class="row g-0">
       <div id="userImg-${uuid}" class="col-md-4">
@@ -139,21 +230,38 @@ let renderTweet = (tObj, uuid)=>{
     </div>
   </div>
   `);
-  userRef.get().then((ss) => {
-    let userData = ss.val();
-    console.log(userData);
-    if(!userData){
-      console.log("null");
-    } 
-    else{
-      console.log("found");
-      handle = userData.handle;
-      $("#userHandle-"+uuid).text(handle);
-      image = userData.pic;
-      console.log(image)
-      $("#userImg-"+uuid).html(`<img src="${image}" id="userImg" class="img-fluid rounded-start" referrerpolicy="no-referrer" alt="..."></img>`);
+  const loggedIn = firebase.auth().currentUser; 
+  $(".likebutton").off("click");
+  $(".likebutton").on("click", (evt)=>{
+    //alert($(evt.currentTarget).attr("data-uuid"));
+    let ID = $(evt.currentTarget).attr("data-uuid");
+    let tweetIDRef = firebase.database().ref("/tweets").child(ID);
+    toggleLike(tweetIDRef, loggedIn.uid);
+  });
+  
+  $(".retweetbutton").off("click");
+  $(".retweetbutton").on("click", (evt)=>{
+    //alert($(evt.currentTarget).attr("data-uuid"));
+    let ID = $(evt.currentTarget).attr("data-uuid");
+    let tweetIDRef = firebase.database().ref("/tweets").child(ID);
+    toggleRetweet(tweetIDRef, loggedIn.uid);
+  });
 
-    }
+  $(".deletebutton").off("click");
+  $(".deletebutton").on("click", (evt)=>{
+    //const user = firebase.auth().currentUser;
+    let tweetID = $(evt.currentTarget).attr("data-uuid");
+    let authorID = $(evt.currentTarget).attr("data-user-uid");
+    console.log(evt.currentTarget);
+    $("div[data-uuid=" + tweetID+ "]").remove();
+    let tweetIDRef = rtdb.ref(db, "/tweets/"+tweetID);
+    //alert(tweetIDRef);
+    rtdb.remove(tweetIDRef); 
+    let authorIDRef = rtdb.ref(db, "/users/"+authorID+"/tweets/"+tweetID);
+    //alert(authorIDRef);
+    rtdb.remove(authorIDRef); 
+
+  });
   });
   
 }
@@ -253,10 +361,7 @@ $("#nukeTweets").on("click", ()=>{
 });
 
 $("#user-search").hide();
-$("#go-to-search").on("click", ()=>{
-  $("#mainpage").hide();
-  $("#user-search").show();
-});
+
 $("#ret-butt").on("click", ()=>{
   $("#mainpage").show();
   $("#user-search").hide();
