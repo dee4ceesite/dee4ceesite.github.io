@@ -68,8 +68,10 @@ let renderLogin = ()=>{
 let renderPage = (loggedIn)=>{ 
   $("#mainpage").show();
   $("#showTweets").hide();
-  let user = loggedIn.displayName;
-  $("#login-user").text("Username is: " + user);
+  let username = loggedIn.displayName;
+  $("#login-user").html(`
+    <p>You are logged in as: ${username}</p>
+  `);
   $("#logout").on("click", ()=>{
 	  firebase.auth().signOut();
   });
@@ -88,15 +90,13 @@ let renderPage = (loggedIn)=>{
     let tObj = ss.val();
     renderTweet(tObj, ss.key, "alltweets");
 }); 
-
+}
 rtdb.onChildChanged(tweetRef, (ss)=>{
   let tObj = ss.val(); 
   let ID = ss.key;
   let newText = "Likes: " + tObj.likes + " Retweets: " + tObj.retweets;
   $("#likeRTtext-"+[ID]).text(newText);
 });
-
-}
 
 let renderSearch = (user)=>{
   
@@ -130,13 +130,6 @@ let renderSearch = (user)=>{
     window.location.search = myParams;
     renderSearch(youruser);
   }
-});
- rtdb.onChildChanged(tweetRef, (ss)=>{
-  //$("#alltweets").empty("");
-  let tObj = ss.val(); 
-  let ID = ss.key;
-  let newText = "Likes: " + tObj.likes + " Retweets: " + tObj.retweets;
-  $("#likeRTtext-"+[ID]).text(newText);
 });
 }
 
@@ -209,10 +202,10 @@ let renderTweet = (tObj, uuid, location)=>{
       $("#userImg-"+uuid).html(`<img src="${image}" id="userImg" class="img-fluid rounded-start" referrerpolicy="no-referrer" alt="..."></img>`);
     }
     $("#"+location).prepend(`
-  <div class="card border-dark mb-3 tweet" data-uuid="${uuid}" data-user-uid="${userID}" style="max-width: 540px;">
+  <div class="card border-dark mb-3 tweet" data-uuid="${uuid}" data-user-uid="${userID}" style="max-width: 600px;">
     <div class="row g-0">
       <div id="userImg-${uuid}" class="col-md-4">
-        <img src="${image}" class="img-fluid rounded-start" referrerpolicy="no-referrer" alt="..."></img>
+        <img src="${image}" class="twtImg img-fluid rounded-start" referrerpolicy="no-referrer" alt="..."></img>
       </div>
       <div class="col-md-8">
         <div class="card-body">
