@@ -6,27 +6,37 @@
   display: none;
 }
 
-body{
-  background-color: grey;
+
+
+#top{
+  color: red;
+  align-self: center;
+  border-radius: 12px;
 }
+
+#userPFP{
+  max-width: 250px;
+  border-radius: 8px;
+  border-style: solid;
+}
+
+body{
+  /*background-image: url(https://cdn.discordapp.com/attachments/596553211939127296/1032438509241376818/wallpaperflare.com_wallpaper.jpg);*/
+  background-image: radial-gradient(red, blue, green);
+  background-attachment: fixed;
+  background-size: cover;
+} 
 
 .tweet{
   background-color: red;
   margin: 0 auto;
-}
-
-.hiding-button{
-  margin: 0 auto;
-}
-
+} 
 
 .retweetbutton{
-  
   box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
 }
 
 .likebutton{
-  
   box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
 }
 

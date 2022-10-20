@@ -68,10 +68,26 @@ let renderLogin = ()=>{
 let renderPage = (loggedIn)=>{ 
   $("#mainpage").show();
   $("#showTweets").hide();
-  let username = loggedIn.displayName;
-  $("#login-user").html(`
-    <p>You are logged in as: ${username}</p>
-  `);
+  var userRef = firebase.database().ref().child("/users").child(loggedIn.uid);
+  userRef.get().then((ss) => {
+    let userData = ss.val();
+    //alert(userData);
+    if(!userData){
+      let username = loggedIn.displayName;
+      $("#logged-user").prepend(`
+        <p>You are logged in as: ${username}</p>
+      `);
+    } 
+    else{
+      $("#logged-user").prepend(`
+        <p>You are logged in as: ${userData.handle}</p>
+      `);
+    }
+  });
+  
+  $("#edit-butt").on("click", ()=>{
+    renderEdit(loggedIn);
+  });
   $("#logout").on("click", ()=>{
 	  firebase.auth().signOut();
   });
@@ -85,18 +101,61 @@ let renderPage = (loggedIn)=>{
       window.location.search = myParams;
       renderSearch(youruser);
     }
-  });
+  }); 
   rtdb.onChildAdded(tweetRef, (ss)=>{
     let tObj = ss.val();
     renderTweet(tObj, ss.key, "alltweets");
 }); 
 }
+
 rtdb.onChildChanged(tweetRef, (ss)=>{
   let tObj = ss.val(); 
   let ID = ss.key;
   let newText = "Likes: " + tObj.likes + " Retweets: " + tObj.retweets;
   $("#likeRTtext-"+[ID]).text(newText);
 });
+
+let renderEdit = (user) =>{
+  $("#mainpage").hide();
+  $("#editUser").show();
+  
+  $("#editUser").html(`
+    <p>Here is your info:</p>
+    <div id="userImg"></div>
+    <div id="username"></div>
+    <input id="newHandle" placeholder="New Handle"/><button id="handle-butt">Update Handle</button>
+    <input id="newImg" placeholder="New Image Link"/><button id="img-butt">Upload Image</button>
+    <button id="leave-edit">Go Back</button>
+  `);
+  var userRef = firebase.database().ref().child("/users").child(user.uid);
+  userRef.get().then((ss) => {
+    let userData = ss.val();
+    //alert(userData);
+    if(!userData){
+      alert("there is none");
+    } 
+    else{
+      $("#userImg").html(`<img id="userPFP" src="${userData.pic}"></img>`);
+      $("#username").html(`<p>Username: ${userData.handle} <p>`);
+    }
+  });
+
+  $("#handle-butt").on("click", ()=>{
+    alert($("#newHandle").val());
+    userRef.child("handle").set($("#newHandle").val());
+    renderEdit(user);
+  });
+  $("#img-butt").on("click", ()=>{
+    alert($("#newImg").val());
+    userRef.child("pic").set($("#newImg").val());
+    renderEdit(user);
+    
+  });
+  $("#leave-edit").on("click", () =>{
+    history.go(0);
+  });
+
+}
 
 let renderSearch = (user)=>{
   
@@ -113,9 +172,6 @@ let renderSearch = (user)=>{
     $("#searched-info").html(`<p>Unable to find User: ${user} </p>`);
   }
   else{
-    //renderUserTweets(key);
-    //$("#searched-info").html(`<p>heyyyy, we did find them! User: ${key}</p>`);
-    
     renderUserTweets(key);  
   }
   $("#mainpage").hide();
@@ -131,7 +187,7 @@ let renderSearch = (user)=>{
     renderSearch(youruser);
   }
 });
-}
+} 
 
 let renderUserTweets = (userKey)=>{
   let loggedIn = firebase.auth().currentUser;
@@ -213,10 +269,10 @@ let renderTweet = (tObj, uuid, location)=>{
             <p class="card-text">${tObj.content}</p>
             <p class="card-text"><small class="text-muted">Tweeted at ${new Date(tObj.timestamp).toLocaleString()}</small></p>
             <p class="card-text" id="likeRTtext-${uuid}">Likes: ${tObj.likes} Retweets: ${tObj.retweets}</p>
-          <div id="buttons">
+          <div id="buttons-${uuid}">
             <button id="likebutton" href="#" class="btn btn-danger likebutton" data-uuid="${uuid}" data-user-uid="${userID}">Like</button>
             <button id="retweetbutton" href="#" class="btn btn-success retweetbutton" data-uuid="${uuid}" data-user-uid="${userID}">Retweet</button>
-            <button id="deletebutton" href="#" class="btn btn-dark deletebutton" data-uuid="${uuid}" data-user-uid="${userID}">Delete Tweet</button>
+            
           </div>
         </div>
       </div>
@@ -240,6 +296,12 @@ let renderTweet = (tObj, uuid, location)=>{
     toggleRetweet(tweetIDRef, loggedIn.uid);
   });
 
+  var user = firebase.auth().currentUser;
+  if(user.uid==userID){
+    $("#buttons-"+uuid).append(`
+      <button id="deletebutton" href="#" class="btn btn-dark deletebutton" data-uuid="${uuid}" data-user-uid="${userID}">Delete Tweet</button>
+    `);
+  }
   $(".deletebutton").off("click");
   $(".deletebutton").on("click", (evt)=>{
     //const user = firebase.auth().currentUser;
@@ -254,7 +316,7 @@ let renderTweet = (tObj, uuid, location)=>{
     //alert(authorIDRef);
     rtdb.remove(authorIDRef); 
 
-  });
+  }); 
   });
   
 }
@@ -299,8 +361,6 @@ let toggleRetweet = (tweetRef, uid)=> {
 
 $("#tweetbutt").on("click", evt=>{
   const user = firebase.auth().currentUser;
-  let username = user.displayName;
-  let image = user.photoURL;
   let tweet = $("#tweet").val();
   let likes = 0;
   let retweets = 0;
@@ -319,8 +379,7 @@ $("#tweetbutt").on("click", evt=>{
   //rtdb.push(tweetRef, myObj);
 });
 
-let updateUser = (user, tweetID)=>{
-  //alert("hey");
+let updateUser = (user, tweetID)=>{;
   var userRef = firebase.database().ref().child("/users").child(user.uid);
   userRef.get().then((ss) => {
     let userData = ss.val();
@@ -355,6 +414,8 @@ $("#nukeTweets").on("click", ()=>{
 
 $("#user-search").hide();
 
+$("#editUser").hide();
+
 $("#ret-butt").on("click", ()=>{
   $("#mainpage").show();
   $("#user-search").hide();
@@ -370,3 +431,25 @@ $("#showTweets").on('click', ()=>{
   $("#showTweets").hide();
   $("#hideTweets").show();
 });
+
+function toDataURL(src, callback, outputFormat) {
+  
+  var img = new Image();
+  img.crossOrigin = 'Anonymous';
+  img.onload = function() {
+    var canvas = document.createElement('CANVAS');
+    var ctx = canvas.getContext('2d');
+    var dataURL;
+    canvas.height = this.naturalHeight;
+    canvas.width = this.naturalWidth;
+    ctx.drawImage(this, 0, 0);
+    dataURL = canvas.toDataURL(outputFormat);
+    callback(dataURL);
+  };
+  img.src = src + "?busting-this-cache";
+  alert(img.src);
+  if (img.complete || img.complete === undefined) {
+    img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+    img.src = src;
+  }
+}
