@@ -34,7 +34,6 @@ let tweetJSON = {
 
 firebase.initializeApp(firebaseConfig);
 firebase.auth().onAuthStateChanged(user => {
-  //alert("hey whats up man how yah doin");
   console.log(user);
   if(!user){
     renderLogin();
@@ -71,7 +70,6 @@ let renderPage = (loggedIn)=>{
   var userRef = firebase.database().ref().child("/users").child(loggedIn.uid);
   userRef.get().then((ss) => {
     let userData = ss.val();
-    //alert(userData);
     if(!userData){
       let username = loggedIn.displayName;
       $("#logged-user").prepend(`
@@ -120,17 +118,16 @@ let renderEdit = (user) =>{
   $("#editUser").show();
   
   $("#editUser").html(`
-    <p>Here is your info:</p>
+    <h2>Here is your info:</h2>
     <div id="userImg"></div>
     <div id="username"></div>
     <input id="newHandle" placeholder="New Handle"/><button id="handle-butt">Update Handle</button>
-    <input id="newImg" placeholder="New Image Link"/><button id="img-butt">Upload Image</button>
+    <input id="newImg" placeholder="New Image Link"/><button id="img-butt">Update Image</button>
     <button id="leave-edit">Go Back</button>
   `);
   var userRef = firebase.database().ref().child("/users").child(user.uid);
   userRef.get().then((ss) => {
     let userData = ss.val();
-    //alert(userData);
     if(!userData){
       alert("there is none");
     } 
@@ -141,12 +138,12 @@ let renderEdit = (user) =>{
   });
 
   $("#handle-butt").on("click", ()=>{
-    alert($("#newHandle").val());
+    //alert($("#newHandle").val());
     userRef.child("handle").set($("#newHandle").val());
     renderEdit(user);
   });
   $("#img-butt").on("click", ()=>{
-    alert($("#newImg").val());
+    //alert($("#newImg").val());
     userRef.child("pic").set($("#newImg").val());
     renderEdit(user);
     
@@ -191,7 +188,6 @@ let renderSearch = (user)=>{
 
 let renderUserTweets = (userKey)=>{
   let loggedIn = firebase.auth().currentUser;
-  //alert(userKey);
   const dbRef = firebase.database().ref();
   
   dbRef.child("users").child(userKey).get().then((ss) => {
@@ -282,7 +278,6 @@ let renderTweet = (tObj, uuid, location)=>{
   const loggedIn = firebase.auth().currentUser; 
   $(".likebutton").off("click");
   $(".likebutton").on("click", (evt)=>{
-    //alert($(evt.currentTarget).attr("data-uuid"));
     let ID = $(evt.currentTarget).attr("data-uuid");
     let tweetIDRef = firebase.database().ref("/tweets").child(ID);
     toggleLike(tweetIDRef, loggedIn.uid);
@@ -290,7 +285,6 @@ let renderTweet = (tObj, uuid, location)=>{
   
   $(".retweetbutton").off("click");
   $(".retweetbutton").on("click", (evt)=>{
-    //alert($(evt.currentTarget).attr("data-uuid"));
     let ID = $(evt.currentTarget).attr("data-uuid");
     let tweetIDRef = firebase.database().ref("/tweets").child(ID);
     toggleRetweet(tweetIDRef, loggedIn.uid);
@@ -304,16 +298,13 @@ let renderTweet = (tObj, uuid, location)=>{
   }
   $(".deletebutton").off("click");
   $(".deletebutton").on("click", (evt)=>{
-    //const user = firebase.auth().currentUser;
     let tweetID = $(evt.currentTarget).attr("data-uuid");
     let authorID = $(evt.currentTarget).attr("data-user-uid");
     console.log(evt.currentTarget);
     $("div[data-uuid=" + tweetID+ "]").remove();
     let tweetIDRef = rtdb.ref(db, "/tweets/"+tweetID);
-    //alert(tweetIDRef);
     rtdb.remove(tweetIDRef); 
     let authorIDRef = rtdb.ref(db, "/users/"+authorID+"/tweets/"+tweetID);
-    //alert(authorIDRef);
     rtdb.remove(authorIDRef); 
 
   }); 
@@ -383,7 +374,6 @@ let updateUser = (user, tweetID)=>{;
   var userRef = firebase.database().ref().child("/users").child(user.uid);
   userRef.get().then((ss) => {
     let userData = ss.val();
-    //alert(userData);
     if(!userData){
       const newUser = {
         handle: user.displayName,
@@ -395,22 +385,13 @@ let updateUser = (user, tweetID)=>{;
       userRef.set(newUser);
     } 
     else{
-      //console.log(userData);
       const newUserTweet = {
           [tweetID] : true,
       } 
       userRef.child("/tweets").update(newUserTweet);
     }
-    //console.log(userData);
-  });
-  
-  
+  }); 
 }
-
-$("#nukeTweets").on("click", ()=>{
-  rtdb.remove(tweetRef);
-  $("#alltweets").empty();
-});
 
 $("#user-search").hide();
 
@@ -433,7 +414,6 @@ $("#showTweets").on('click', ()=>{
 });
 
 function toDataURL(src, callback, outputFormat) {
-  
   var img = new Image();
   img.crossOrigin = 'Anonymous';
   img.onload = function() {

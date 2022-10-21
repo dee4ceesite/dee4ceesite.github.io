@@ -9,9 +9,41 @@
 
 
 #top{
-  color: red;
-  align-self: center;
+  color: black;
+  /*-webkit-text-stroke: 2px aqua;*/
+  text-align: center;
   border-radius: 12px;
+  border-style: solid;
+  margin: auto;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  text-shadow: 2px 2px 5px rgba(0, 140, 186, 0.5);
+  background-color: rgba(136, 206, 230, 0.5);
+  width: 1000px;
+  box-shadow: 5px 10px #888888;
+}
+
+#editUser{
+  text-align: center;
+  margin: auto;
+  vertical-align: bottom;
+  border-spacing: 20px;
+  border-radius: 100px;
+  box-shadow: 50px;
+  width: 500px;
+  padding: 50px;
+  text-shadow: 2px 2px 5px rgba(0, 140, 186, 0.5);
+  background-color: rgba(0, 200, 200, 0.5);
+}
+#edit-butt{
+  align-self: inline;
+  display: inline-block;
+}
+
+#hiding-buttons{
+  text-align: center;
+  margin: auto;
+  display: none;
 }
 
 #userPFP{
@@ -21,8 +53,8 @@
 }
 
 body{
-  /*background-image: url(https://cdn.discordapp.com/attachments/596553211939127296/1032438509241376818/wallpaperflare.com_wallpaper.jpg);*/
-  background-image: radial-gradient(red, blue, green);
+  background-image: url(https://cdn.discordapp.com/attachments/596553211939127296/1032438509241376818/wallpaperflare.com_wallpaper.jpg);
+  /*background-image: radial-gradient(red, blue, green);*/
   background-attachment: fixed;
   background-size: cover;
 } 
